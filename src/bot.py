@@ -154,7 +154,6 @@ class GPTProcessor:
                 model=self.deployment_name,
                 messages=[{"role": "user", "content": scoring_prompt}],
                 response_format={"type": "json_object"},
-                temperature=0.2,
             )
             scores_data = json.loads(response.choices[0].message.content)
             scores = scores_data.get("scores", [])
@@ -201,7 +200,6 @@ class GPTProcessor:
                 model=self.deployment_name,
                 messages=[{"role": "user", "content": newsletter_prompt}],
                 response_format={"type": "json_object"},
-                temperature=0.7,
             )
             newsletter_data = json.loads(response.choices[0].message.content)
             # Attach original articles for reference in the emailer

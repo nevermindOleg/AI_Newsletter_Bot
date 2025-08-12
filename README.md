@@ -88,20 +88,34 @@ To run the collection and processing steps without sending an email, use the `--
 python3 src/main.py --test
 ```
 
-## Automated Scheduling with Cron
+## Automation
 
-For fully automated daily newsletters, use a cron job. This is the most resource-efficient method.
+This project is designed to be automated. The recommended method is using GitHub Actions, but a traditional cron job can also be used if you prefer to self-host.
+
+### Method 1: GitHub Actions (Recommended)
+
+This repository contains a workflow file at `.github/workflows/newsletter.yml` that will automatically run your script on a schedule.
+
+**How it Works:**
+
+1.  **Schedule:** The action is scheduled to run daily at 08:00 UTC. You can change this by editing the `cron` schedule in the `newsletter.yml` file.
+2.  **Manual Trigger:** You can also run the workflow manually by going to the "Actions" tab in your GitHub repository, selecting "Send Daily AI Newsletter", and clicking "Run workflow".
+3.  **Secrets:** The workflow **requires** you to store your API keys and configuration in your repository's secrets. Go to `Settings` > `Secrets and variables` > `Actions` and add all the variables from the `.env.example` file. The script will not work until you do this.
+
+### Method 2: Cron Job (Self-hosted Alternative)
+
+If you are running this on your own server, you can use a cron job for scheduling.
 
 1.  Open your crontab editor:
     ```bash
     crontab -e
     ```
 
-2.  Add a line to schedule the script. This example runs the script every day at 8:00 AM. Make sure to use the **absolute paths** to your Python interpreter and script.
+2.  Add a line to schedule the script. This example runs it every day at 8:00 AM. Make sure to use the **absolute paths** to your Python interpreter and script.
 
     ```cron
     # Minute Hour Day Month DayOfWeek Command
     0 8 * * * /path/to/your/venv/bin/python /path/to/your/AI_Newsletter_Bot/src/main.py --once >> /path/to/your/AI_Newsletter_Bot/cron.log 2>&1
     ```
 
-    - `>> /path/to/your/AI_Newsletter_Bot/cron.log 2>&1` is highly recommended as it logs all output and errors from the script, which is essential for debugging.
+    - Logging the output (`>> ... 2>&1`) is crucial for debugging.

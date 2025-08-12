@@ -10,11 +10,14 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import List, Dict
+from pathlib import Path
 
 import httpx
 from openai import AsyncAzureOpenAI
 import resend
 from dotenv import load_dotenv
+
+from .config import NewsletterConfig
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +25,9 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Get the project root directory
+PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TavilyCollector:
@@ -94,16 +100,18 @@ class GPTProcessor:
     def __init__(self):
         try:
             self.client = AsyncAzureOpenAI(
-                api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+                api_version="2024-12-01-preview",  # Hardcoded API version
                 azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                 api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             )
-            self.deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+            # Hardcoded deployment and model name
+            self.deployment_name = "gpt-5-nano"
         except Exception as e:
             raise ValueError(f"Azure OpenAI client initialization failed: {e}")
 
-        self.interests = os.getenv('AI_INTERESTS', 'AI news')
-        self.audience = os.getenv('TARGET_AUDIENCE', 'tech professionals')
+        # Use hardcoded defaults if environment variables are not set
+        self.interests = os.getenv('AI_INTERESTS', 'Large Language Models, AI agents, AI tools, machine learning breakthroughs')
+        self.audience = os.getenv('TARGET_AUDIENCE', 'tech professionals and AI enthusiasts')
 
     async def process_articles(self, articles: List[Dict], limit: int = 5) -> Dict:
         """Scores, ranks, and generates newsletter content from the top articles."""
@@ -211,14 +219,18 @@ class ResendEmailer:
         resend.api_key = os.getenv('RESEND_API_KEY')
         if not resend.api_key:
             raise ValueError("RESEND_API_KEY environment variable not set.")
+        
         self.from_email = os.getenv('FROM_EMAIL')
-        self.to_email = os.getenv('RECIPIENT_EMAIL')
+        # Get recipient emails, split by comma, and strip whitespace
+        recipients_str = os.getenv('RECIPIENT_EMAIL', '')
+        self.to_emails = [email.strip() for email in recipients_str.split(',') if email.strip()]
+        
         self.newsletter_name = os.getenv('NEWSLETTER_NAME', 'AI Daily Brief')
 
     async def send_newsletter(self, newsletter_data: Dict) -> bool:
         """Constructs and sends the newsletter email."""
-        if not all([self.from_email, self.to_email]):
-            logger.error("FROM_EMAIL or RECIPIENT_EMAIL environment variables not set.")
+        if not self.from_email or not self.to_emails:
+            logger.error("FROM_EMAIL or RECIPIENT_EMAIL environment variables not set or empty.")
             return False
         if not newsletter_data or 'top_stories' not in newsletter_data:
             logger.warning("No newsletter data to send.")
@@ -231,7 +243,7 @@ class ResendEmailer:
         try:
             response = resend.Emails.send({
                 "from": self.from_email,
-                "to": self.to_email,
+                "to": self.to_emails, # Pass the list of recipients
                 "subject": subject,
                 "html": html_content,
                 "text": text_content,
@@ -243,7 +255,7 @@ class ResendEmailer:
             return False
 
     def _generate_html(self, data: Dict) -> str:
-        """Generates HTML email content from the structured newsletter data."""
+        """Generates HTML email content from template."""
         stories_html = ""
         for story in data.get('top_stories', []):
             stories_html += f"""
@@ -254,54 +266,26 @@ class ResendEmailer:
             </div>
             """
 
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }}
-                .container {{ background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; }}
-                .header {{ background: #4a4a4a; color: white; padding: 30px; text-align: center; }}
-                .header h1 {{ margin: 0; font-size: 28px; }}
-                .date {{ opacity: 0.8; font-size: 14px; margin-top: 5px; }}
-                .content {{ padding: 30px; }}
-                .opening {{ font-size: 18px; color: #555; border-left: 4px solid #6c5ce7; padding-left: 15px; margin-bottom: 30px; }}
-                .article {{ margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #eee; }}
-                .article:last-child {{ border-bottom: none; }}
-                .article h3 {{ margin-top: 0; color: #333; }}
-                .summary {{ color: #666; margin: 10px 0; }}
-                .read-more {{ display: inline-block; color: #6c5ce7; text-decoration: none; font-weight: 600; margin-top: 10px; }}
-                .section {{ background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 30px 0; }}
-                .footer {{ text-align: center; padding: 20px; color: #999; font-size: 12px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>{self.newsletter_name}</h1>
-                    <div class="date">{datetime.now().strftime('%A, %B %d, %Y')}</div>
-                </div>
-                <div class="content">
-                    <p class="opening">{data.get('opening_hook', 'Here is your daily AI briefing.')}</p>
-                    <h2>Top Stories</h2>
-                    {stories_html}
-                    <div class="section">
-                        <h3>Tool of the Day</h3>
-                        <p>{data.get('tool_of_the_day', 'Explore new AI tools to boost your productivity.')}</p>
-                    </div>
-                    <div class="section">
-                        <h3>Closing Thought</h3>
-                        <p>{data.get('closing_thought', 'The field of AI continues to evolve at a breathtaking pace. Stay curious!')}</p>
-                    </div>
-                </div>
-                <div class="footer">
-                    <p>Generated by AI Newsletter Bot</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        # Load and render template
+        template_path = PROJECT_ROOT / "templates" / "newsletter.html"
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = f.read()
+            
+            return template.format(
+                newsletter_name=self.newsletter_name,
+                current_date=datetime.now().strftime('%A, %B %d, %Y'),
+                opening_hook=data.get('opening_hook', 'Here is your daily AI briefing.'),
+                stories_html=stories_html,
+                tool_of_the_day=data.get('tool_of_the_day', 'Explore new AI tools to boost your productivity.'),
+                closing_thought=data.get('closing_thought', 'The field of AI continues to evolve at a breathtaking pace. Stay curious!')
+            )
+        except FileNotFoundError:
+            logger.error(f"Template not found: {template_path}")
+            return "Template not found. Please check your installation."
+        except Exception as e:
+            logger.error(f"Template rendering failed: {e}")
+            return "Error rendering newsletter template."
 
     def _generate_text_version(self, data: Dict) -> str:
         """Generates a plain text version of the email."""
@@ -320,7 +304,8 @@ class ResendEmailer:
 class AINewsletterBot:
     """Main orchestrator for the newsletter bot."""
 
-    def __init__(self):
+    def __init__(self, config: NewsletterConfig = None):
+        self.config = config or NewsletterConfig.from_env()
         self.collector = TavilyCollector()
         self.processor = GPTProcessor()
         self.emailer = ResendEmailer()

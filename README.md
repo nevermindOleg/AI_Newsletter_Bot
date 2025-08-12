@@ -10,11 +10,14 @@ The entire process is designed to be run automatically on a schedule (e.g., dail
 
 ## Features
 
-- **Modular Architecture:** Code is separated into logical components for collection, processing, and delivery.
-- **Azure OpenAI Integration:** Leverages the power and reliability of Azure for AI processing.
-- **High-Quality Content:** Advanced prompt engineering generates rewritten headlines, summaries, and key takeaways.
-- **Efficient Scheduling:** Designed to be run via `cron` to minimize resource usage.
-- **Test Mode:** Includes a `--test` flag to run the full pipeline without sending an email, printing a preview to the console instead.
+- **Centralized Configuration:** Clean config management with validation and defaults
+- **Modular Architecture:** Code is separated into logical components for collection, processing, and delivery
+- **Azure OpenAI Integration:** Leverages the power and reliability of Azure for AI processing
+- **Multiple Recipients:** Support for sending to multiple email addresses
+- **Template-based HTML:** Clean separation of HTML templates from code
+- **High-Quality Content:** Advanced prompt engineering generates rewritten headlines, summaries, and key takeaways
+- **Efficient Scheduling:** Designed to be run via `cron` to minimize resource usage
+- **Test Mode:** Includes a `--test` flag to run the full pipeline without sending an email, printing a preview to the console instead
 
 ## Project Structure
 
@@ -25,8 +28,11 @@ The entire process is designed to be run automatically on a schedule (e.g., dail
 ├── .env.example            # A template for the .env file
 ├── README.md               # This file
 ├── requirements.txt        # Python dependencies
+├── templates/
+│   └── newsletter.html     # Email HTML template
 └── src/
     ├── __init__.py
+    ├── config.py           # Centralized configuration management
     ├── bot.py              # Core logic classes
     └── main.py             # Main execution script
 ```
@@ -60,13 +66,32 @@ pip install -r requirements.txt
 
 ### 4. Configure Environment Variables
 
-Create a `.env` file in the root of the project by copying the example template.
+For local development, you can create a `.env` file in the root of the project by copying the template.
 
 ```bash
 cp .env.example .env
 ```
 
-Now, open the `.env` file with a text editor and fill in your actual API keys and configuration details.
+Now, open the `.env` file and fill in your configuration. The `RECIPIENT_EMAILS` variable can be a single email or a comma-separated list of emails.
+
+**Configuration Details:**
+
+**Required Variables (must be set):**
+- `TAVILY_API_KEY` - Your Tavily search API key
+- `AZURE_OPENAI_ENDPOINT` - Your Azure OpenAI endpoint URL
+- `AZURE_OPENAI_API_KEY` - Your Azure OpenAI API key
+- `RESEND_API_KEY` - Your Resend email API key
+- `FROM_EMAIL` - Sender email (must be verified with Resend)
+- `RECIPIENT_EMAILS` - Comma-separated list of recipient emails
+
+**Optional Variables (have defaults):**
+- `AZURE_OPENAI_DEPLOYMENT_NAME` (default: `gpt-5-nano`)
+- `AZURE_OPENAI_API_VERSION` (default: `2024-12-01-preview`)
+- `AI_INTERESTS` (default: `Large Language Models, AI agents, AI tools, machine learning breakthroughs`)
+- `TARGET_AUDIENCE` (default: `tech professionals and AI enthusiasts`)
+- `NEWSLETTER_NAME` (default: `AI Daily Brief`)
+
+The script will fail if any required variables are missing, but optional ones will use sensible defaults for quick testing.
 
 ## How to Run
 

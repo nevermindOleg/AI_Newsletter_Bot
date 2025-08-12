@@ -12,6 +12,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.bot import AINewsletterBot
+from src.config import NewsletterConfig
 
 async def main():
     """
@@ -19,16 +20,21 @@ async def main():
     Parses command-line arguments to decide whether to run a real newsletter,
     a test run, or show help.
     """
-    bot = AINewsletterBot()
+    try:
+        config = NewsletterConfig.from_env()
+        bot = AINewsletterBot(config)
 
-    if '--once' in sys.argv:
-        await bot.run_newsletter()
-    elif '--test' in sys.argv:
-        await bot.test_run()
-    else:
-        print("Usage: python src/main.py [--once | --test]")
-        print("  --once: Run the full newsletter pipeline and send the email.")
-        print("  --test: Run the pipeline but print a preview instead of sending an email.")
+        if '--once' in sys.argv:
+            await bot.run_newsletter()
+        elif '--test' in sys.argv:
+            await bot.test_run()
+        else:
+            print("Usage: python src/main.py [--once | --test]")
+            print("  --once: Run the full newsletter pipeline and send the email.")
+            print("  --test: Run the pipeline but print a preview instead of sending an email.")
+            sys.exit(1)
+    except ValueError as e:
+        print(f"Configuration Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

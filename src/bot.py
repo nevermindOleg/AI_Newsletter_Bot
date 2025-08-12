@@ -363,4 +363,4 @@ class AINewsletterBot:
         print(f"{newsletter_data.get('closing_thought')}\n")
         print("="*50)
         print("Test run complete. No email was sent.")
-        print("="*50 + "\n")")}``}")
+        print("="*50 + "\n")

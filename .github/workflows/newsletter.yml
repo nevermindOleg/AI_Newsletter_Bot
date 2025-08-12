@@ -36,15 +36,16 @@ jobs:
       # 4. Runs the Python script to send the newsletter
       - name: Run the newsletter script
         env:
-          # This section securely loads your secrets as environment variables
+          # Required secrets - must be set in repository settings
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
-          AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+          # Optional secrets - have defaults if not set
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
           AI_INTERESTS: ${{ secrets.AI_INTERESTS }}
           TARGET_AUDIENCE: ${{ secrets.TARGET_AUDIENCE }}
           NEWSLETTER_NAME: ${{ secrets.NEWSLETTER_NAME }}

@@ -220,7 +220,7 @@ class ResendEmailer:
         
         self.from_email = os.getenv('FROM_EMAIL')
         # Get recipient emails, split by comma, and strip whitespace
-        recipients_str = os.getenv('RECIPIENT_EMAIL', '')
+        recipients_str = os.getenv('RECIPIENT_EMAILS') or os.getenv('RECIPIENT_EMAIL', '')
         self.to_emails = [email.strip() for email in recipients_str.split(',') if email.strip()]
         
         self.newsletter_name = os.getenv('NEWSLETTER_NAME', 'AI Daily Brief')
@@ -228,7 +228,7 @@ class ResendEmailer:
     async def send_newsletter(self, newsletter_data: Dict) -> bool:
         """Constructs and sends the newsletter email."""
         if not self.from_email or not self.to_emails:
-            logger.error("FROM_EMAIL or RECIPIENT_EMAIL environment variables not set or empty.")
+            logger.error("FROM_EMAIL or RECIPIENT_EMAILS environment variables not set or empty.")
             return False
         if not newsletter_data or 'top_stories' not in newsletter_data:
             logger.warning("No newsletter data to send.")

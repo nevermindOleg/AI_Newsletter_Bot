@@ -19,6 +19,17 @@ The entire process is designed to be run automatically on a schedule (e.g., dail
 - **Efficient Scheduling:** Designed to be run via `cron` to minimize resource usage
 - **Test Mode:** Includes a `--test` flag to run the full pipeline without sending an email, printing a preview to the console instead
 
+## Recent Enhancements
+
+The following enhancements and features have been implemented:
+
+-   **Enhanced News Collection Strategy:** The `TavilyCollector` was refactored to employ a dual search approach, ensuring more comprehensive news gathering:
+    *   **Self-reported News:** Targeted searches are now performed using Tavily's `include_domains` parameter, directly fetching articles from specified `trusted_news_domains` (e.g., official company blogs). This ensures efficient and precise collection of direct announcements.
+    *   **Third-party Coverage:** A separate, broader search is conducted using `topic="news"` to gather general AI news from a wider array of sources. This captures industry trends and analyses that might not originate from the trusted domain list.
+-   **Improved Data Handling:** Article processing now includes robust handling for `raw_content`, ensuring content is always correctly processed as a string.
+-   **Improved Configuration Loading:** The system now ensures that default values for `trusted_news_domains` are correctly loaded when the environment variable is not set, enhancing configuration stability.
+-   **Adjusted Search Scope:** The third-party news search `time_range` was adjusted to focus on the last 1 day, providing more current results.
+
 ## Project Structure
 
 ```

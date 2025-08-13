@@ -33,12 +33,13 @@ PROJECT_ROOT = Path(__file__).parent.parent
 class TavilyCollector:
     """Collects AI news using the Tavily Search API."""
 
-    def __init__(self):
+    def __init__(self, trusted_news_domains: List[str] = None):
         self.api_key = os.getenv('TAVILY_API_KEY')
         if not self.api_key:
             raise ValueError("TAVILY_API_KEY environment variable not set.")
         self.base_url = "https://api.tavily.com"
         self.interests = os.getenv('AI_INTERESTS', 'LLMs, AI agents, AI tools').split(',')
+        self.trusted_news_domains = trusted_news_domains
 
     async def search_news(self) -> List[Dict]:
         """Fetches the latest AI news from Tavily based on interests."""
@@ -50,6 +51,9 @@ class TavilyCollector:
             results_list = await asyncio.gather(*tasks)
             for results in results_list:
                 all_results.extend(results)
+
+        # Filter by trusted domains if configured
+        all_results = self._filter_by_domain(all_results)
 
         return self._deduplicate(all_results)
 
@@ -63,7 +67,7 @@ class TavilyCollector:
                     "query": query,
                     "search_depth": "advanced",
                     "include_raw_content": True,
-                    "max_results": 10,
+                    "max_results": 100,
                     "days": 1  # Last 24 hours
                 }
             )
@@ -93,6 +97,31 @@ class TavilyCollector:
         logger.info(f"Deduplicated: {len(articles)} -> {len(unique_articles)} articles")
         return unique_articles
 
+    def _filter_by_domain(self, articles: List[Dict]) -> List[Dict]:
+        """Filters articles to include only those from trusted news domains."""
+        if not self.trusted_news_domains:
+            logger.info("No trusted news domains specified. Skipping domain filtering.")
+            return articles
+
+        filtered_articles = []
+        for article in articles:
+            url = article.get('url')
+            if url:
+                # Extract domain from URL and check against trusted domains
+                import urllib.parse
+                parsed_url = urllib.parse.urlparse(url)
+                domain = parsed_url.netloc
+                # Remove 'www.' prefix if present for consistent matching
+                if domain.startswith('www.'):
+                    domain = domain[4:]
+                
+                if domain in self.trusted_news_domains:
+                    filtered_articles.append(article)
+                else:
+                    logger.debug(f"Skipping article from untrusted domain: {domain} - {url}")
+        logger.info(f"Filtered by domain: {len(articles)} -> {len(filtered_articles)} articles")
+        return filtered_articles
+
 
 class GPTProcessor:
     """Processes and ranks articles using Azure OpenAI Service."""
@@ -105,7 +134,7 @@ class GPTProcessor:
                 api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             )
             # Hardcoded deployment and model name
-            self.deployment_name = "gpt-5-nano"
+            self.deployment_name = "gpt-5-mini"
         except Exception as e:
             raise ValueError(f"Azure OpenAI client initialization failed: {e}")
 
@@ -131,7 +160,9 @@ class GPTProcessor:
     async def _score_articles(self, articles: List[Dict]) -> List[Dict]:
         """Scores articles based on relevance, newsworthiness, and importance."""
         articles_text = [
-            f"ID: {i}\nTitle: {article.get('title', 'N/A')}\nContent: {article.get('raw_content', '')[:1000]}"
+            f"ID: {i}
+Title: {article.get('title', 'N/A')}
+Content: {article.get('raw_content', '')[:4000]}"
             for i, article in enumerate(articles)
         ]
 
@@ -304,7 +335,7 @@ class AINewsletterBot:
 
     def __init__(self, config: NewsletterConfig = None):
         self.config = config or NewsletterConfig.from_env()
-        self.collector = TavilyCollector()
+        self.collector = TavilyCollector(trusted_news_domains=self.config.trusted_news_domains)
         self.processor = GPTProcessor()
         self.emailer = ResendEmailer()
 

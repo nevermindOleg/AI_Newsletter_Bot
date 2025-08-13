@@ -31,7 +31,15 @@ class NewsletterConfig:
     ai_interests: str = "Large Language Models, AI agents, AI tools, machine learning breakthroughs"
     target_audience: str = "tech professionals and AI enthusiasts"
     newsletter_name: str = "AI Daily Brief"
-    
+    # Optional: List of trusted news domains for filtering articles.
+    # If set via environment variable TRUSTED_NEWS_DOMAINS, it overrides this default.
+    trusted_news_domains: List[str] = [
+        'blog.google', 'openai.com', 'anthropic.com', 'blog.perplexity.ai',
+        'techcrunch.com', 'wired.com', 'theverge.com', 'arstechnica.com', 'engadget.com',
+        'venturebeat.com', 'zdnet.com', 'cnet.com', 'mashable.com', 'thenextweb.com',
+        'spectrum.ieee.org', 'quantamagazine.org', 'nature.com', 'science.org', 'arxiv.org'
+    ]
+
     @classmethod
     def from_env(cls) -> 'NewsletterConfig':
         """Create configuration from environment variables."""
@@ -73,6 +81,7 @@ class NewsletterConfig:
             'ai_interests': os.getenv('AI_INTERESTS', cls.ai_interests),
             'target_audience': os.getenv('TARGET_AUDIENCE', cls.target_audience),
             'newsletter_name': os.getenv('NEWSLETTER_NAME', cls.newsletter_name),
+            'trusted_news_domains': [d.strip() for d in os.getenv('TRUSTED_NEWS_DOMAINS', '').split(',') if d.strip()] or cls.trusted_news_domains,
         })
         
         return cls(**config_values)

@@ -81,7 +81,7 @@ class NewsletterConfig:
             'ai_interests': os.getenv('AI_INTERESTS', cls.ai_interests),
             'target_audience': os.getenv('TARGET_AUDIENCE', cls.target_audience),
             'newsletter_name': os.getenv('NEWSLETTER_NAME', cls.newsletter_name),
-            'trusted_news_domains': [d.strip() for d in os.getenv('TRUSTED_NEWS_DOMAINS', '').split(',') if d.strip()] or cls.trusted_news_domains,
+            'trusted_news_domains': [d.strip() for d in os.getenv('TRUSTED_NEWS_DOMAINS', '').split(',') if d.strip()] or cls.__dataclass_fields__['trusted_news_domains'].default_factory(),
         })
         
         return cls(**config_values)

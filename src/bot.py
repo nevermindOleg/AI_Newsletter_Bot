@@ -160,9 +160,9 @@ class GPTProcessor:
     async def _score_articles(self, articles: List[Dict]) -> List[Dict]:
         """Scores articles based on relevance, newsworthiness, and importance."""
         articles_text = [
-            f"ID: {i}
+            f"""ID: {i}
 Title: {article.get('title', 'N/A')}
-Content: {article.get('raw_content', '')[:4000]}"
+Content: {article.get('raw_content', '')[:4000]}"""
             for i, article in enumerate(articles)
         ]
 

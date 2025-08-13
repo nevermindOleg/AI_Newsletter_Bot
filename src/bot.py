@@ -60,7 +60,7 @@ class TavilyCollector:
             # Use a more general query for third-party news
             third_party_queries = [f"{interest.strip()} AI news" for interest in self.interests]
             third_party_tasks = [
-                self._fetch_for_query(client, query, topic="news", days=30)
+                self._fetch_for_query(client, query, topic="news", days=1)
                 for query in third_party_queries
             ]
             third_party_results = await asyncio.gather(*third_party_tasks)
@@ -160,7 +160,7 @@ class GPTProcessor:
         articles_text = [
             f"""ID: {i}
 Title: {article.get('title', 'N/A')}
-Content: {article.get('raw_content', '')[:4000]}"""
+Content: {str(article.get('raw_content', ''))[:4000]}"""
             for i, article in enumerate(articles)
         ]
 

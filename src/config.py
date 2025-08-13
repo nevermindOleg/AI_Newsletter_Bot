@@ -5,7 +5,7 @@ Centralized configuration with validation.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 from dotenv import load_dotenv
 
@@ -33,12 +33,12 @@ class NewsletterConfig:
     newsletter_name: str = "AI Daily Brief"
     # Optional: List of trusted news domains for filtering articles.
     # If set via environment variable TRUSTED_NEWS_DOMAINS, it overrides this default.
-    trusted_news_domains: List[str] = [
+    trusted_news_domains: List[str] = field(default_factory=lambda: [
         'blog.google', 'openai.com', 'anthropic.com', 'blog.perplexity.ai',
         'techcrunch.com', 'wired.com', 'theverge.com', 'arstechnica.com', 'engadget.com',
         'venturebeat.com', 'zdnet.com', 'cnet.com', 'mashable.com', 'thenextweb.com',
         'spectrum.ieee.org', 'quantamagazine.org', 'nature.com', 'science.org', 'arxiv.org'
-    ]
+    ])
 
     @classmethod
     def from_env(cls) -> 'NewsletterConfig':
